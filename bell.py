@@ -7,7 +7,7 @@ pygame.init()
 screen = pygame.display.set_mode((5120, 3200), pygame.SCALED | pygame.FULLSCREEN)
 clock = pygame.Clock()
 
-version_info = 'FAZA 1'
+version_info = 'FAZA 2b'
 
 # hvala patrik
 def find_real_path(relative_path):
@@ -20,6 +20,7 @@ def find_real_path(relative_path):
 default_font = 'Montserrat-Bold.ttf'
 fullscreen = False
 kill_thread = False
+checker_border_size = 20
 
 # postavke zvona
 sound = pygame.mixer.Sound(find_real_path('assets/09once.wav'))
@@ -72,7 +73,12 @@ def render_font(txt: str, color, x:int, y:int, size:int=36, font_file:str=defaul
     screen.blit(pygame.font.Font(find_real_path(f'assets/{font_file}'), size*4).render(txt, True, color), (x*4, y*4))
 
 def draw_bg():
-    screen.fill((63, 63, 63))
+    screen.fill((159,159,159))
+    for x in range(40):
+        for y in range(25):
+            pygame.draw.rect(screen, (255, 255, 255), (x*128+checker_border_size//2, y*128+checker_border_size//2, 128-checker_border_size, 128-checker_border_size))
+    pygame.draw.line(screen, (255, 0, 0), (192, 0), (192, 3200), 10)
+    pygame.draw.rect(screen, (0, 0, 0), (374, 374, 2194, 194*4+11))
 
 t1 = threading.Thread(target=zzyzx)
 
@@ -114,19 +120,19 @@ try:
 
         clock.tick(50)
         draw_bg()
-        render_font(version_info, (255, 255, 255), 0, 0, 25)
-        render_font(f'current int time: {current_time}', (255, 255, 255), 100, 100)
-        render_font(f'current time: {rtc}', (255, 255, 255), 100, 136)
-        render_font(f'represented int time: {offset_int_time}', (255, 255, 255), 100, 172)
-        render_font(f'represented time: {offset_time}', (255, 255, 255), 100, 208)
+        render_font(version_info, (0,0,0), 0, 0, 25)
+        render_font(f'current int time: {current_time}', (191, 191, 191), 100, 100)
+        render_font(f'current time: {rtc}', (191, 191, 191), 100, 136)
+        render_font(f'represented int time: {offset_int_time}', (255, 255, 0), 100, 172)
+        render_font(f'represented time: {offset_time}', (255, 255, 0), 100, 208)
         if offset_int_time >= rings[-1]:
-            render_font('NASTAVA JE ZAVRŠENA', (255, 255, 255), 100, 244)
+            render_font('NASTAVA JE ZAVRŠENA', (0, 255, 0), 100, 244)
         else:
             temp = rings[index_in_rings]-offset_int_time
             render_font(''
                        f'{(temp//60):02}:'
                        f'{temp%60:02} '
-                        'do zvona', (255, 255, 255), 100, 244)
+                        'do zvona', (0, 255, 0), 100, 244)
         if offset_int_time in rings:
             index_in_rings += 1
             play_bell()
