@@ -15,7 +15,7 @@ def find_real_path(relative_path):
         base_path = os.path.abspath('.')
     return os.path.join(base_path, relative_path)
 
-font = pygame.font.Font(find_real_path('assets/Montserrat-Bold.ttf'), 36*4)
+default_font = 'assets/Montserrat-Bold.ttf'
 fullscreen = False
 time_offset = 0
 
@@ -35,8 +35,7 @@ rings = [
     39600,
     42300,
     42600,
-    45300,
-    79100
+    45300
 ]
 
 def set_rtc_variables():
@@ -49,7 +48,7 @@ def set_rtc_variables():
     hm[0] = int(temp[0])
     hm[1] = int(temp[1])
     current_time = s+mins*60+h*3600
-    current_time -= time_offset
+    current_time += time_offset
 
 def zzyzx():
     global bell_started
@@ -60,10 +59,19 @@ def zzyzx():
     bell_started = False
     return
 
-def render_font(input, color, xy):
-    screen.blit(font.render(input, True, color), xy)
+def render_font(txt, color, x, y, size=36, font=default_font):
+    screen.blit(pygame.font.Font(find_real_path(font), size*4).render(txt, True, color), (x*4, y*4))
+
+def draw_bg():
+    screen.fill((63, 63, 63))
 
 t1 = threading.Thread(target=zzyzx)
+
+def play_bell():
+    global bell_started
+    if not bell_started:
+        bell_started = True
+        t1.start()
 
 bell_started = False
 rtc, h, mins, hm, current_time = 0, 0, 0, [0, 0], 0
@@ -76,6 +84,10 @@ for i in rings:
 index_in_rings %= 13
 print(index_in_rings)
 
+render_font('ŠKOLSKO ZVONO: REKREACIJA\nSADA OFFLINE', (255, 255, 255), 100, 64, 128, 'assets/Comic Sans MS.ttf')
+pygame.display.flip()
+sleep(2.5)
+
 while running:
     set_rtc_variables()
 
@@ -85,18 +97,19 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
+            elif event.key == pygame.K_SPACE:
+                play_bell()
 
     clock.tick(50)
-    screen.fill((63, 63, 63))
-    render_font(f'integer time: {current_time}', (255, 255, 255), (100*4, 64*4))
-    render_font(f'rtc: {rtc}', (255, 255, 255), (100*4, 100*4))
+    draw_bg()
+    render_font(f'integer time: {current_time}', (255, 255, 255), 100, 64)
+    render_font(f'rtc: {rtc}', (255, 255, 255), 100, 100)
     if current_time >= rings[-1]:
-        render_font('NASTAVA JE ZAVRŠENA', (255, 255, 255), (100*4, 136*4))
+        render_font('NASTAVA JE ZAVRŠENA', (255, 255, 255), 100, 136)
     else:
-        render_font(f'{rings[index_in_rings]-current_time}s do zvona', (255, 255, 255), (100 * 4, 136 * 4))
-    if current_time in rings and not bell_started:
-        bell_started = True
-        t1.start()
+        render_font(f'{rings[index_in_rings]-current_time}s do zvona', (255, 255, 255), 100, 136)
+    if current_time in rings:
+        play_bell()
     pygame.display.flip()
 
 pygame.quit()
