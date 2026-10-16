@@ -17,7 +17,7 @@ def find_real_path(relative_path):
         base_path = os.path.abspath('.')
     return os.path.join(base_path, relative_path)
 
-default_font = 'assets/Montserrat-Bold.ttf'
+default_font = 'Montserrat-Bold.ttf'
 fullscreen = False
 kill_thread = False
 
@@ -26,29 +26,36 @@ sound = pygame.mixer.Sound(find_real_path('assets/09once.wav'))
 loops_left = 0
 RING_BELL_EVENT = pygame.USEREVENT + 2
 rings = [
-    27000,
-    29700,
-    30000,
-    32700,
-    33600,
-    36300,
-    36600,
-    39300,
-    39600,
-    42300,
-    42600,
-    45300
+    27000, # 7:30
+    29700, # 8:15
+    30000, # 8:20
+    32700, # 9:05
+    33600, # 9:20
+    36300, # 10:05
+    36600, # 10:10
+    39300, # 10:55
+    39600, # 11:00
+    42300, # 11:45
+    42600, # 11:50
+    45300, # 12:35
+    45600, # 12:40
+    48300  # 13:25
 ]
 
+class TimeConversion:
+    @staticmethod
+    def int_to_time(int_time:int):
+        return f'{(int_time//3600)%24:02}:{(int_time//60)%60:02}:{int_time%60:02}'
+
 def set_rtc_variables():
-    global rtc, current_time, repr_time
+    global rtc, current_time, offset_time, offset_int_time
     rtc = datetime.now().strftime("%H:%M:%S")
     h = int(datetime.now().strftime("%H"))
     mins = int(datetime.now().strftime("%M"))
     s = int(datetime.now().strftime("%S"))
     current_time = s+mins*60+h*3600
-    current_time -= time_offset
-    repr_time = f'{(current_time//3600)%24:02}:{(current_time//60)%60:02}:{current_time%60:02}'
+    offset_int_time = current_time-time_offset
+    offset_time = TimeConversion.int_to_time(offset_int_time)
 
 def zzyzx():
     global bell_started
@@ -61,8 +68,8 @@ def zzyzx():
         if kill_thread:
             return
 
-def render_font(txt, color, x, y, size=36, font=default_font):
-    screen.blit(pygame.font.Font(find_real_path(font), size*4).render(txt, True, color), (x*4, y*4))
+def render_font(txt: str, color, x:int, y:int, size:int=36, font_file:str=default_font):
+    screen.blit(pygame.font.Font(find_real_path(f'assets/{font_file}'), size*4).render(txt, True, color), (x*4, y*4))
 
 def draw_bg():
     screen.fill((63, 63, 63))
@@ -73,23 +80,22 @@ bell_started = False
 t1.start()
 
 def play_bell():
-    global bell_started, index_in_rings
-    index_in_rings += 1
+    global bell_started
     bell_started = (True if not bell_started else False)
 
-rtc, current_time, repr_time = 0, 0, 0
-#time_offset = ( 2 * 3600 + # sati
-#                35 * 60 +  # minute
+rtc, current_time, offset_time, time_offset, offset_int_time = 0, 0, 0, 0, 0
+#time_offset = ( 3 * 3600 + # sati
+#               50 * 60 +   # minute
 #                0)         # sekunde
 
 index_in_rings = 0
 set_rtc_variables()
 for i in rings:
-    if current_time >= i:
+    if offset_int_time >= i:
         index_in_rings += 1
-index_in_rings %= 13
+index_in_rings %= len(rings)
 
-render_font('ŠKOLSKO ZVONO: REKREACIJA\nSADA OFFLINE', (255, 255, 255), 100, 64, 128, 'assets/Comic Sans MS.ttf')
+render_font('ŠKOLSKO ZVONO: REKREACIJA\nSADA OFFLINE', (255, 255, 255), 100, 64, 128, 'Comic Sans MS.ttf')
 pygame.display.flip()
 sleep(1)
 
@@ -109,14 +115,20 @@ try:
         clock.tick(50)
         draw_bg()
         render_font(version_info, (255, 255, 255), 0, 0, 25)
-        render_font(f'integer time: {current_time}', (255, 255, 255), 100, 64)
-        render_font(f'represented time: {repr_time}', (255, 255, 255), 100, 100)
-        render_font(f'rtc: {rtc}', (255, 255, 255), 100, 136)
-        if current_time >= rings[-1]:
-            render_font('NASTAVA JE ZAVRŠENA', (255, 255, 255), 100, 172)
+        render_font(f'current int time: {current_time}', (255, 255, 255), 100, 100)
+        render_font(f'current time: {rtc}', (255, 255, 255), 100, 136)
+        render_font(f'represented int time: {offset_int_time}', (255, 255, 255), 100, 172)
+        render_font(f'represented time: {offset_time}', (255, 255, 255), 100, 208)
+        if offset_int_time >= rings[-1]:
+            render_font('NASTAVA JE ZAVRŠENA', (255, 255, 255), 100, 244)
         else:
-            render_font(f'{rings[index_in_rings]-current_time}s do zvona', (255, 255, 255), 100, 172)
-        if current_time in rings:
+            temp = rings[index_in_rings]-offset_int_time
+            render_font(''
+                       f'{(temp//60):02}:'
+                       f'{temp%60:02} '
+                        'do zvona', (255, 255, 255), 100, 244)
+        if offset_int_time in rings:
+            index_in_rings += 1
             play_bell()
         pygame.display.flip()
 except BaseException as e:
