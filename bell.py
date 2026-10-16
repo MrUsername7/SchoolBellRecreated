@@ -7,6 +7,8 @@ pygame.init()
 screen = pygame.display.set_mode((5120, 3200), pygame.SCALED | pygame.FULLSCREEN)
 clock = pygame.Clock()
 
+version_info = 'FAZA 1'
+
 # hvala patrik
 def find_real_path(relative_path):
     try:
@@ -45,7 +47,7 @@ def set_rtc_variables():
     mins = int(datetime.now().strftime("%M"))
     s = int(datetime.now().strftime("%S"))
     current_time = s+mins*60+h*3600
-    current_time += time_offset
+    current_time -= time_offset
     repr_time = f'{(current_time//3600)%24:02}:{(current_time//60)%60:02}:{current_time%60:02}'
 
 def zzyzx():
@@ -75,10 +77,10 @@ def play_bell():
     index_in_rings += 1
     bell_started = (True if not bell_started else False)
 
-rtc, current_time, repr_time, time_offset = 0, 0, 0, 0
-#time_offset -= ( 3 * 3600 + # sati
-#                1 * 60 +    # minute
-#                00)         # sekunde
+rtc, current_time, repr_time = 0, 0, 0
+#time_offset = ( 2 * 3600 + # sati
+#                35 * 60 +  # minute
+#                0)         # sekunde
 
 index_in_rings = 0
 set_rtc_variables()
@@ -106,6 +108,7 @@ try:
 
         clock.tick(50)
         draw_bg()
+        render_font(version_info, (255, 255, 255), 0, 0, 25)
         render_font(f'integer time: {current_time}', (255, 255, 255), 100, 64)
         render_font(f'represented time: {repr_time}', (255, 255, 255), 100, 100)
         render_font(f'rtc: {rtc}', (255, 255, 255), 100, 136)
