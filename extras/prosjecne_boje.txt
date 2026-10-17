@@ -1,0 +1,5 @@
+procjene
+
+boje       |   sat   |  odmor  | zavr. nastave |
+potpunjeno | #5F00FF | #3FE63F |      non      |
+prazno     | #9A60FF | #A6FFA6 |    #ABABAB    |

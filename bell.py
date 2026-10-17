@@ -13,16 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://gnu.org>.
 
-import pygame, threading
-import sys, os
+import pygame, threading, sys, os
 from time import sleep
 from datetime import datetime
 running = True
 pygame.init()
-screen = pygame.display.set_mode((5120, 3200), pygame.SCALED | pygame.FULLSCREEN)
+
+fullscreen = True
+
+BASE_WIDTH = 1280
+BASE_HEIGHT = 800
+WH_MULTI = 4
+
+WIDTH = BASE_WIDTH*WH_MULTI
+HEIGHT = BASE_HEIGHT*WH_MULTI
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT), (pygame.SCALED if WH_MULTI >= 1 or fullscreen else 0) | pygame.FULLSCREEN)
 clock = pygame.Clock()
 
-version_info = 'FAZA 2b'
+version_info = 'FAZA 3 DEV'
 
 # hvala patrik
 def find_real_path(relative_path):
@@ -33,9 +42,8 @@ def find_real_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 default_font = 'Montserrat-Bold.ttf'
-fullscreen = False
 kill_thread = False
-checker_border_size = 20
+checker_border_size = 5*WH_MULTI
 
 # postavke zvona
 sound = pygame.mixer.Sound(find_real_path('assets/09once.wav'))
@@ -65,10 +73,11 @@ class TimeConversion:
 
 def set_rtc_variables():
     global rtc, current_time, offset_time, offset_int_time
-    rtc = datetime.now().strftime("%H:%M:%S")
-    h = int(datetime.now().strftime("%H"))
-    mins = int(datetime.now().strftime("%M"))
-    s = int(datetime.now().strftime("%S"))
+    dtnstrf = datetime.now().strftime
+    rtc = dtnstrf("%H:%M:%S")
+    h = int(dtnstrf("%H"))
+    mins = int(dtnstrf("%M"))
+    s = int(dtnstrf("%S"))
     current_time = s+mins*60+h*3600
     offset_int_time = current_time-time_offset
     offset_time = TimeConversion.int_to_time(offset_int_time)
@@ -77,23 +86,23 @@ def zzyzx():
     global bell_started
     while True:
         if bell_started:
-            for i in range(3):
+            for _ in range(3):
                 sound.play()
                 sleep(4.2)
+                if kill_thread: return # valjda neće više access violation bug
             bell_started = False
-        if kill_thread:
-            return
+        if kill_thread: return
 
 def render_font(txt: str, color, x:int, y:int, size:int=36, font_file:str=default_font):
-    screen.blit(pygame.font.Font(find_real_path(f'assets/{font_file}'), size*4).render(txt, True, color), (x*4, y*4))
+    screen.blit(pygame.font.Font(find_real_path(f'assets/{font_file}'), int(size*WH_MULTI)).render(txt, True, color), (x*WH_MULTI, y*WH_MULTI))
 
 def draw_bg():
     screen.fill((159,159,159))
     for x in range(40):
         for y in range(25):
-            pygame.draw.rect(screen, (255, 255, 255), (x*128+checker_border_size//2, y*128+checker_border_size//2, 128-checker_border_size, 128-checker_border_size))
-    pygame.draw.line(screen, (255, 0, 0), (192, 0), (192, 3200), 10)
-    pygame.draw.rect(screen, (0, 0, 0), (374, 374, 2194, 194*4+11))
+            pygame.draw.rect(screen, (255, 255, 255), (x*(32*WH_MULTI)+checker_border_size//2, y*(32*WH_MULTI)+checker_border_size//2, (32*WH_MULTI)-checker_border_size, (32*WH_MULTI)-checker_border_size))
+    pygame.draw.line(screen, (255, 0, 0), (48*WH_MULTI, 0), (48*WH_MULTI, HEIGHT), int(2.5*WH_MULTI))
+    pygame.draw.rect(screen, (0, 0, 0), (int(93.5*WH_MULTI), int(93.5*WH_MULTI), int(548.5*WH_MULTI), int(196.75*WH_MULTI)))
 
 t1 = threading.Thread(target=zzyzx)
 
@@ -111,8 +120,8 @@ rtc, current_time, offset_time, time_offset, offset_int_time = 0, 0, 0, 0, 0
 
 index_in_rings = 0
 set_rtc_variables()
-for i in rings:
-    if offset_int_time >= i:
+for _ in rings:
+    if offset_int_time >= _:
         index_in_rings += 1
 index_in_rings %= len(rings)
 
@@ -120,9 +129,12 @@ render_font('ŠKOLSKO ZVONO: REKREACIJA\nSADA OFFLINE', (255, 255, 255), 100, 64
 pygame.display.flip()
 sleep(1)
 
+odmor = False
+
 try:
     while running:
         set_rtc_variables()
+        odmor = (index_in_rings-1)/2 != (index_in_rings-1)//2
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -132,22 +144,22 @@ try:
                     running = False
                 elif event.key == pygame.K_SPACE:
                     play_bell()
+                elif event.key == pygame.K_F11:
+                    fullscreen = not fullscreen
+                    screen = pygame.display.set_mode((WIDTH, HEIGHT), (pygame.SCALED if WH_MULTI >= 1 or fullscreen else 0) | (pygame.FULLSCREEN if fullscreen else 0))
 
         clock.tick(50)
         draw_bg()
         render_font(version_info, (0,0,0), 0, 0, 25)
-        render_font(f'current int time: {current_time}', (191, 191, 191), 100, 100)
-        render_font(f'current time: {rtc}', (191, 191, 191), 100, 136)
-        render_font(f'represented int time: {offset_int_time}', (255, 255, 0), 100, 172)
         render_font(f'represented time: {offset_time}', (255, 255, 0), 100, 208)
         if offset_int_time >= rings[-1]:
-            render_font('NASTAVA JE ZAVRŠENA', (0, 255, 0), 100, 244)
+            render_font('NASTAVA ZAVRŠENA', (255, 255, 255), 100, 244)
         else:
             temp = rings[index_in_rings]-offset_int_time
             render_font(''
                        f'{(temp//60):02}:'
                        f'{temp%60:02} '
-                        'do zvona', (0, 255, 0), 100, 244)
+                       f'{("DO POČETKA x SATA" if odmor else "DO KRAJA SATA")}', (0, 255, 0), 100, 244)
         if offset_int_time in rings:
             index_in_rings += 1
             play_bell()
