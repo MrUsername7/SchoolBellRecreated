@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://gnu.org>.
+import math
 
 import pygame, threading, sys, os
 from time import sleep
@@ -75,7 +76,7 @@ bell_colours = {
         'prazno': 0xA6FFA6
     },
     'kraj': {
-        'prazno': 0xABABAB
+        'prazno': 0xCFCFCF
     }
 }
 
@@ -155,58 +156,35 @@ def draw_bg():
                        ),
                        312.5*WH_MULTI
                        )
+    full_clr = ((fetch_colour('odmor', 1) if odmor else fetch_colour('sat', 1)) if not offset_int_time >= rings[-1] else fetch_colour('kraj'))
+    cx = (1500+128*1.25)/4*WH_MULTI
+    cy = (1500+32*0.75)/4*WH_MULTI
+    r = 250*WH_MULTI
     pygame.draw.circle(screen,
-                       ((fetch_colour('odmor') if odmor else fetch_colour('sat')) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
+                       full_clr,
                        (
-                           (1500+128*1.25)/4*WH_MULTI,
-                           (1500+32*0.75)/4*WH_MULTI
+                           cx,
+                           cy
                        ),
-                       250*WH_MULTI
+                       r
                        )
-    if rings[index_in_rings] - offset_int_time >= (rings[index_in_rings] - rings[index_in_rings-1]):
-        pygame.draw.circle(screen,
-                           ((fetch_colour('odmor', 1) if odmor else fetch_colour('sat', 1)) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
-                           (
-                               (1500 + 128 * 1.25) / 4 * WH_MULTI,
-                               (1500 + 32 * 0.75) / 4 * WH_MULTI
-                           ),
-                           250 * WH_MULTI,
-                           0,
-                           0,1,0,0
-                           )
-    if rings[index_in_rings] - offset_int_time >= (rings[index_in_rings] - rings[index_in_rings-1])/4*3:
-        pygame.draw.circle(screen,
-                           ((fetch_colour('odmor', 1) if odmor else fetch_colour('sat', 1)) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
-                           (
-                               (1500 + 128 * 1.25) / 4 * WH_MULTI,
-                               (1500 + 32 * 0.75) / 4 * WH_MULTI
-                           ),
-                           250 * WH_MULTI,
-                           0,
-                           0,0,1
-                           )
-    if rings[index_in_rings] - offset_int_time >= (rings[index_in_rings] - rings[index_in_rings-1])/4*2:
-        pygame.draw.circle(screen,
-                           ((fetch_colour('odmor', 1) if odmor else fetch_colour('sat', 1)) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
-                           (
-                               (1500 + 128 * 1.25) / 4 * WH_MULTI,
-                               (1500 + 32 * 0.75) / 4 * WH_MULTI
-                           ),
-                           250 * WH_MULTI,
-                           0,
-                           0,0,0,1
-                           )
-    if rings[index_in_rings] - offset_int_time >= (rings[index_in_rings] - rings[index_in_rings-1])/4:
-        pygame.draw.circle(screen,
-                           ((fetch_colour('odmor', 1) if odmor else fetch_colour('sat', 1)) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
-                           (
-                               (1500 + 128 * 1.25) / 4 * WH_MULTI,
-                               (1500 + 32 * 0.75) / 4 * WH_MULTI
-                           ),
-                           250 * WH_MULTI,
-                           0,
-                           1
-                           )
+    if not offset_int_time >= rings[-1]:
+        a1 = math.radians(90)
+        a2 = math.radians((max(0.0, min(1.0, (offset_int_time - rings[index_in_rings - 1]) / (rings[index_in_rings] - rings[index_in_rings - 1]))) if rings[index_in_rings] != rings[index_in_rings - 1] else 0.0) * 360 + 90)
+        pygame.draw.arc(screen,
+                        ((fetch_colour('odmor') if odmor else fetch_colour('sat')) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
+                        pygame.Rect(
+                            ((1500 + 128 * 1.25) / 4 * WH_MULTI) - r,
+                            ((1500 + 32 * 0.75) / 4 * WH_MULTI) - r,
+                            500 * WH_MULTI,
+                            500 * WH_MULTI
+                        ),
+                        a1,
+                        a2,
+                        50*WH_MULTI
+                        )
+        pygame.draw.circle(screen, full_clr, (cx + (r - 50*WH_MULTI/2) * math.cos(a1), cy - (r - 50*WH_MULTI/2) * math.sin(a1)), 50*WH_MULTI/2)
+        pygame.draw.circle(screen, full_clr, (cx + (r - 50*WH_MULTI/2) * math.cos(a2), cy - (r - 50*WH_MULTI/2) * math.sin(a2)), 50*WH_MULTI/2)
     pygame.draw.circle(screen,
                        0xffffff,
                        (
@@ -223,11 +201,11 @@ t1.start()
 
 def play_bell():
     global bell_started
-    bell_started = (True if not bell_started else False)
+    bell_started = not bell_started
 
 rtc, current_time, offset_time, time_offset, offset_int_time = 0, 0, 0, 0, 0
 time_offset = ( 7 * 3600 + # sati
-               17 * 60 +   # minute
+               51 * 60 +   # minute
                 0)         # sekunde
 
 index_in_rings = 0
@@ -276,7 +254,7 @@ try:
             play_bell()
         render_font(version_info, 0, 0, 0, 25)
         pygame.display.flip()
-except BaseException as e:
+except KeyboardInterrupt as e:
     print(f'{e}\n{type(e).__name__}')
 
 kill_thread = True
