@@ -204,9 +204,9 @@ def play_bell():
     bell_started = not bell_started
 
 rtc, current_time, offset_time, time_offset, offset_int_time = 0, 0, 0, 0, 0
-time_offset = ( 7 * 3600 + # sati
-               51 * 60 +   # minute
-                0)         # sekunde
+#time_offset = ( 0 * 3600 + # sati
+#                0 * 60 +   # minute
+#                0)         # sekunde
 
 index_in_rings = 0
 set_rtc_variables()
@@ -254,7 +254,7 @@ try:
             play_bell()
         render_font(version_info, 0, 0, 0, 25)
         pygame.display.flip()
-except KeyboardInterrupt as e:
+except BaseException as e:
     print(f'{e}\n{type(e).__name__}')
 
 kill_thread = True
