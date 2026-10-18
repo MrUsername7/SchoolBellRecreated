@@ -23,7 +23,7 @@ fullscreen = True
 
 BASE_WIDTH = 1280
 BASE_HEIGHT = 800
-WH_MULTI = 4
+WH_MULTI = 0.75
 
 WIDTH = BASE_WIDTH*WH_MULTI
 HEIGHT = BASE_HEIGHT*WH_MULTI
@@ -114,9 +114,9 @@ def play_bell():
     bell_started = (True if not bell_started else False)
 
 rtc, current_time, offset_time, time_offset, offset_int_time = 0, 0, 0, 0, 0
-#time_offset = ( 3 * 3600 + # sati
-#               50 * 60 +   # minute
-#                0)         # sekunde
+time_offset = ( 3 * 3600 + # sati
+               58 * 60 +   # minute
+                0)         # sekunde
 
 index_in_rings = 0
 set_rtc_variables()
@@ -151,7 +151,7 @@ try:
         clock.tick(50)
         draw_bg()
         render_font(version_info, (0,0,0), 0, 0, 25)
-        render_font(f'represented time: {offset_time}', (255, 255, 0), 100, 208)
+        render_font(f'represented time: {offset_time}', (171, 171, 171), 100, 208)
         if offset_int_time >= rings[-1]:
             render_font('NASTAVA ZAVRŠENA', (255, 255, 255), 100, 244)
         else:
@@ -159,8 +159,8 @@ try:
             render_font(''
                        f'{(temp//60):02}:'
                        f'{temp%60:02} '
-                       f'{("DO POČETKA x SATA" if odmor else "DO KRAJA SATA")}', (0, 255, 0), 100, 244)
-        if offset_int_time in rings:
+                       f'{("DO POČETKA x SATA" if odmor else "DO KRAJA SATA")}', ((0x3F, 0xE6, 0x3F) if odmor else (0x5F, 0, 0xFF)), 100, 244)
+        if offset_int_time in rings and not bell_started:
             index_in_rings += 1
             play_bell()
         pygame.display.flip()
