@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://gnu.org>.
+
 import math
 
 import pygame, threading, sys, os
@@ -24,7 +25,7 @@ fullscreen = True
 
 BASE_WIDTH = 1280
 BASE_HEIGHT = 800
-WH_MULTI = 4
+WH_MULTI = 4 # ovo ili manje
 
 WIDTH = BASE_WIDTH*WH_MULTI
 HEIGHT = BASE_HEIGHT*WH_MULTI
@@ -42,14 +43,34 @@ def find_real_path(relative_path):
         base_path = os.path.abspath('.')
     return os.path.join(base_path, relative_path)
 
+baloo2_bold = 'Baloo2/Baloo2-Bold.ttf'          # 700, Danas (viši), veliki odmor oznaka
+baloo2_extrabold = 'Baloo2/Baloo2-Extraold.ttf' # 800, status / onaj "badge"/"sticker" (6. SAT, ODMOR, i PAUZA), učionica
+lexend_regular = 'Lexend/Lexend-Regular.ttf'    # 400, do kraja sata, "Zvono u {vrijeme} · sada je {vrijeme}" tekst
+lexend_medium = 'Lexend/Lexend-Medium.ttf'      # 500, checklist vremena
+lexend_semibold = 'Lexend/Lexend-SemiBold.ttf'  # 600, odbrojavanje, nedovršeni satovi u checklist, "Zvono u {vrijeme} · sada je {vrijeme}" vrijeme
 default_font = 'Montserrat-Bold.ttf'
 kill_thread = False
-checker_border_size = 5*WH_MULTI
+checker_border_size = 4*WH_MULTI
 
 # postavke zvona
-sound = pygame.mixer.Sound(find_real_path('assets/09once.wav'))
-loops_left = 0
+sound = pygame.mixer.Sound(find_real_path('assets/very_ethical.mp3'))
 RING_BELL_EVENT = pygame.USEREVENT + 2
+bell_colours = {
+    'sat': {
+        'puno': 0x2f6fe4,
+        'prazno': 0xe3ecfd
+    },
+    'odmor': {
+        'puno': 0x127a50,
+        'prazno': 0xdcf2e7
+    },
+    'kraj': {
+        'prazno': 0xf1ebdf
+    },
+    'tekst': {
+        'puno': 0x1f2a44
+    }
+}
 rings = [
     27000, # 7:30
     29700, # 8:15
@@ -66,19 +87,6 @@ rings = [
     45600, # 12:40
     48300  # 13:25
 ]
-bell_colours = {
-    'sat': {
-        'puno': 0x5F00FF,
-        'prazno': 0xD7BFFF
-    },
-    'odmor': {
-        'puno': 0x3FE63F,
-        'prazno': 0xA6FFA6
-    },
-    'kraj': {
-        'prazno': 0xCFCFCF
-    }
-}
 
 def fetch_colour(field: str, full: bool = False):
     return bell_colours.get(field).get('puno' if full else 'prazno')
@@ -99,114 +107,53 @@ def set_rtc_variables():
     offset_int_time = current_time-time_offset
     offset_time = TimeConversion.int_to_time(offset_int_time)
 
-def zzyzx():
+def bell_player():
     global bell_started
     while True:
         if bell_started:
-            for _ in range(3):
-                sound.play()
-                sleep(4.2)
-                if kill_thread: return # valjda neće više access violation bug
+            sound.play()
+            sleep(13.668)
             bell_started = False
         if kill_thread: return
 
-def render_font(txt: str, color, x: int, y: int, size: int = 36, font_file : str = default_font):
+def render_font(txt: str, color, x, y, size: int = 36, font_file : str = default_font):
     screen.blit(pygame.font.Font(find_real_path(f'assets/{font_file}'), int(size*WH_MULTI)).render(txt, True, color), (x*WH_MULTI, y*WH_MULTI))
 
 def draw_bg():
     screen.fill((159,159,159))
     for x in range(40):
         for y in range(25):
-            pygame.draw.rect(
-                screen,
-                0xffffff,
-                (
-                    x*(32*WH_MULTI)+checker_border_size//2,
-                    y*(32*WH_MULTI)+checker_border_size//2,
-                    (32*WH_MULTI)-checker_border_size,
-                    (32*WH_MULTI)-checker_border_size
-                )
-            )
-    pygame.draw.line(screen,
-                     0xff0000,
-                     (
-                         48*WH_MULTI,
-                         0
-                     ),
-                     (
-                         48*WH_MULTI,
-                         HEIGHT
-                     ),
-                     int(2.5*WH_MULTI)
-                     )
-   #pygame.draw.rect(screen,
-   #                 0,
-   #                 (
-   #                     int(93.5*WH_MULTI),
-   #                     int(93.5*WH_MULTI),
-   #                     int(548.5*WH_MULTI),
-   #                     int(196.75*WH_MULTI)
-   #                 )
-   #                 )
-    pygame.draw.circle(screen,
-                       0xefefef,
-                       (
-                           (1500+128*1.25)/4*WH_MULTI,
-                           (1500+32*0.75)/4*WH_MULTI
-                       ),
-                       312.5*WH_MULTI
-                       )
+            pygame.draw.rect(screen, 0xffffff, (x*(32*WH_MULTI)+checker_border_size//2, y*(32*WH_MULTI)+checker_border_size//2, (32*WH_MULTI)-checker_border_size, (32*WH_MULTI)-checker_border_size))
+    pygame.draw.line(screen, 0xff0000, (48*WH_MULTI, 0), ( 48*WH_MULTI, HEIGHT), int(2.5*WH_MULTI))
+    pygame.draw.circle(screen, 0xe8e9ec, ((1500+128*1.25)/4*WH_MULTI, (1500+32*0.75)/4*WH_MULTI), 312.5*WH_MULTI)
+    pygame.draw.circle(screen, 0xffffff, ((1500+128*1.25)/4*WH_MULTI, (1500+32*0.75)/4*WH_MULTI), 307.5*WH_MULTI)
     full_clr = ((fetch_colour('odmor', 1) if odmor else fetch_colour('sat', 1)) if not offset_int_time >= rings[-1] else fetch_colour('kraj'))
-    cx = (1500+128*1.25)/4*WH_MULTI
-    cy = (1500+32*0.75)/4*WH_MULTI
-    r = 250*WH_MULTI
-    pygame.draw.circle(screen,
-                       full_clr,
-                       (
-                           cx,
-                           cy
-                       ),
-                       r
-                       )
+    r = 275*WH_MULTI
+    pygame.draw.circle(screen, full_clr, (cx, cy), r)
     if not offset_int_time >= rings[-1]:
+      try:
         a1 = math.radians(90)
         a2 = math.radians((max(0.0, min(1.0, (offset_int_time - rings[index_in_rings - 1]) / (rings[index_in_rings] - rings[index_in_rings - 1]))) if rings[index_in_rings] != rings[index_in_rings - 1] else 0.0) * 360 + 90)
-        pygame.draw.arc(screen,
-                        ((fetch_colour('odmor') if odmor else fetch_colour('sat')) if not offset_int_time >= rings[-1] else fetch_colour('kraj')),
-                        pygame.Rect(
-                            ((1500 + 128 * 1.25) / 4 * WH_MULTI) - r,
-                            ((1500 + 32 * 0.75) / 4 * WH_MULTI) - r,
-                            500 * WH_MULTI,
-                            500 * WH_MULTI
-                        ),
-                        a1,
-                        a2,
-                        50*WH_MULTI
-                        )
+        pygame.draw.arc(screen, ((fetch_colour('odmor') if odmor else fetch_colour('sat')) if not offset_int_time >= rings[-1] else fetch_colour('kraj')), pygame.Rect(((1500 + 128 * 1.25) / 4 * WH_MULTI) - r, ((1500 + 32 * 0.75) / 4 * WH_MULTI) - r, r*2, r*2), a1, a2, int(50*WH_MULTI))
         pygame.draw.circle(screen, full_clr, (cx + (r - 50*WH_MULTI/2) * math.cos(a1), cy - (r - 50*WH_MULTI/2) * math.sin(a1)), 50*WH_MULTI/2)
         pygame.draw.circle(screen, full_clr, (cx + (r - 50*WH_MULTI/2) * math.cos(a2), cy - (r - 50*WH_MULTI/2) * math.sin(a2)), 50*WH_MULTI/2)
-    pygame.draw.circle(screen,
-                       0xffffff,
-                       (
-                           (1500+128*1.25)/4*WH_MULTI,
-                           (1500+32*0.75)/4*WH_MULTI
-                       ),
-                       200*WH_MULTI
-                       )
+      except IndexError:
+          pass
+    pygame.draw.circle(screen, 0xffffff, ((1500+128*1.25)/4*WH_MULTI, (1500+32*0.75)/4*WH_MULTI), 225*WH_MULTI)
 
-t1 = threading.Thread(target=zzyzx)
+bell_thread = threading.Thread(target=bell_player)
 
 bell_started = False
-t1.start()
+bell_thread.start()
 
 def play_bell():
     global bell_started
     bell_started = not bell_started
 
 rtc, current_time, offset_time, time_offset, offset_int_time = 0, 0, 0, 0, 0
-#time_offset = ( 0 * 3600 + # sati
-#                0 * 60 +   # minute
-#                0)         # sekunde
+time_offset = ( 6 * 3600 + # sati
+               44 * 60 +   # minute
+                0)         # sekunde
 
 index_in_rings = 0
 set_rtc_variables()
@@ -220,6 +167,9 @@ pygame.display.flip()
 sleep(1)
 
 odmor = False
+
+cx = (1500 + 128 * 1.25) / 4 * WH_MULTI
+cy = (1500 + 32 * 0.75) / 4 * WH_MULTI
 
 try:
     while running:
@@ -240,21 +190,19 @@ try:
 
         clock.tick(50)
         draw_bg()
-        render_font(f'represented time: {offset_time}', 0xABABAB00, 100, 208) # NE ZNAM ZAŠTO NE RADI SAMO 0xABABAB KOD TEKSTA
-        if offset_int_time >= rings[-1]:
-            render_font('NASTAVA ZAVRŠENA', 0xFFFFFF, 100, 244)
-        else:
-            temp = rings[index_in_rings]-offset_int_time
-            render_font(''
-                       f'{(temp//60):02}:'
-                       f'{temp%60:02} '
-                       f'{("DO POČETKA x SATA" if odmor else "DO KRAJA SATA")}', (fetch_colour('sat', 1) if odmor else fetch_colour('odmor', 1)), 100, 244)
+        school_ended = offset_int_time >= rings[-1]
+        bell_font_size = 100 if school_ended else 150
+        temp = rings[index_in_rings]-offset_int_time
+        bell_time = f'{(temp//60):02}:{temp%60:02}' if not school_ended else str(offset_time)
+        countdown_font = pygame.font.Font(find_real_path(f'assets/{lexend_semibold}'), bell_font_size)
+        countdown_dims = countdown_font.size(bell_time)
+        render_font(bell_time, fetch_colour('tekst',1), cx/WH_MULTI-countdown_dims[0]/2, cy/WH_MULTI-countdown_dims[1]/2, bell_font_size, lexend_semibold)
         if offset_int_time in rings and not bell_started:
             index_in_rings += 1
             play_bell()
         render_font(version_info, 0, 0, 0, 25)
         pygame.display.flip()
-except BaseException as e:
+except KeyboardInterrupt as e:
     print(f'{e}\n{type(e).__name__}')
 
 kill_thread = True
